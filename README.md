@@ -104,14 +104,16 @@ kubectl get nodes  # Verify cluster access
 cd ../k8s-manifests
 
 # Add Helm repo
-helm repo add llmkube https://llmkube.dev/charts
+helm repo add llmkube https://defilantech.github.io/LLMKube
 helm repo update
+helm search repo llmkube --versions
 
 # Install operator
+CHART_VERSION="0.7.5"
 helm install llmkube llmkube/llmkube \
   --namespace llmkube-system \
-  --create-namespace \
-  --version 0.7.5
+  --version ${CHART_VERSION} \
+  --create-namespace
 
 # Configure for EBS volumes
 kubectl apply -f llmkube-post-install.yaml

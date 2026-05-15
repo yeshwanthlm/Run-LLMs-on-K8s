@@ -23,12 +23,15 @@ Deploy Gemma 4 E2B LLM on your EKS cluster with OpenAI-compatible API.
 
 ```bash
 # 1. Install LLMKube operator
-helm repo add llmkube https://llmkube.dev/charts
+helm repo add llmkube https://defilantech.github.io/LLMKube
 helm repo update
+helm search repo llmkube --versions
+
+CHART_VERSION="0.7.5"
 helm install llmkube llmkube/llmkube \
   --namespace llmkube-system \
-  --create-namespace \
-  --version 0.7.5
+  --version ${CHART_VERSION} \
+  --create-namespace
 
 # 2. Configure operator for EBS volumes
 kubectl apply -f llmkube-post-install.yaml
@@ -54,13 +57,15 @@ echo "API: http://${LB_URL}:8080"
 ### Step 1: Install LLMKube Operator
 
 ```bash
-helm repo add llmkube https://llmkube.dev/charts
+helm repo add llmkube https://defilantech.github.io/LLMKube
 helm repo update
+helm search repo llmkube --versions
 
+CHART_VERSION="0.7.5"
 helm install llmkube llmkube/llmkube \
   --namespace llmkube-system \
-  --create-namespace \
-  --version 0.7.5
+  --version ${CHART_VERSION} \
+  --create-namespace
 ```
 
 Verify installation:

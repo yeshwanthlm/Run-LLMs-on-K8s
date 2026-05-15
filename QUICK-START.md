@@ -33,13 +33,15 @@ kubectl get nodes  # Verify 2 nodes are Ready
 ```bash
 cd ../k8s-manifests
 
-helm repo add llmkube https://llmkube.dev/charts
+helm repo add llmkube https://defilantech.github.io/LLMKube
 helm repo update
+helm search repo llmkube --versions
 
+CHART_VERSION="0.7.5"
 helm install llmkube llmkube/llmkube \
   --namespace llmkube-system \
   --create-namespace \
-  --version 0.7.5
+  --version ${CHART_VERSION}
 
 kubectl apply -f llmkube-post-install.yaml
 kubectl wait --for=condition=complete job/llmkube-configure -n llmkube-system --timeout=60s
