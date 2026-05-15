@@ -446,7 +446,6 @@ chat();
 
 ## Acknowledgments
 
-- Inspired by [Marcel Dempers' docker-development-youtube-series](https://github.com/marcel-dempers/docker-development-youtube-series)
 - Built with [LLMKube](https://github.com/defilantech/LLMKube)
 - Uses [Terraform AWS EKS Module](https://github.com/terraform-aws-modules/terraform-aws-eks)
 
