@@ -1,0 +1,89 @@
+# Automatic service annotation patch for LoadBalancer configuration
+# This job waits for the service to be created and patches it with correct annotations
+# Apply this RIGHT AFTER applying inference.yaml
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: patch-service-loadbalancer
+  namespace: default
+spec:
+  ttlSecondsAfterFinished: 300  # Auto-cleanup after 5 minutes
+  template:
+    spec:
+      serviceAccountName: service-patcher
+      restartPolicy: OnFailure
+      containers:
+      - name: patcher
+        image: bitnami/kubectl:latest
+        command:
+        - /bin/bash
+        - -c
+        - |
+          set -e
+          echo "Waiting for gemma-e2b-service service to be created..."
+
+          # Wait up to 60 seconds for service to exist
+          for i in {1..12}; do
+            if kubectl get svc gemma-e2b-service -n default &>/dev/null; then
+              echo "✓ Service found"
+              break
+            fi
+            echo "  Waiting... ($i/12)"
+            sleep 5
+          done
+
+          # Verify service exists
+          if ! kubectl get svc gemma-e2b-service -n default &>/dev/null; then
+            echo "✗ Service not found after 60 seconds"
+            exit 1
+          fi
+
+          # Check if already patched
+          SCHEME=$(kubectl get svc gemma-e2b-service -n default -o jsonpath='{.metadata.annotations.service\.beta\.kubernetes\.io/aws-load-balancer-scheme}' 2>/dev/null || echo "")
+          TARGET_TYPE=$(kubectl get svc gemma-e2b-service -n default -o jsonpath='{.metadata.annotations.service\.beta\.kubernetes\.io/aws-load-balancer-nlb-target-type}' 2>/dev/null || echo "")
+
+          if [ "$SCHEME" == "internet-facing" ] && [ "$TARGET_TYPE" == "ip" ]; then
+            echo "✓ Service already has correct annotations"
+            exit 0
+          fi
+
+          echo "Patching service with LoadBalancer annotations..."
+          kubectl annotate svc gemma-e2b-service -n default \
+            service.beta.kubernetes.io/aws-load-balancer-scheme=internet-facing \
+            service.beta.kubernetes.io/aws-load-balancer-nlb-target-type=ip \
+            --overwrite
+
+          echo "✓ Service patched successfully"
+          echo "✓ LoadBalancer will be recreated as internet-facing with IP targets"
+          echo "⚠ Note: LoadBalancer recreation may take 2-3 minutes"
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: service-patcher
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: service-patcher
+  namespace: default
+rules:
+- apiGroups: [""]
+  resources: ["services"]
+  verbs: ["get", "list", "patch", "update"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: service-patcher
+  namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: service-patcher
+subjects:
+- kind: ServiceAccount
+  name: service-patcher
+  namespace: default

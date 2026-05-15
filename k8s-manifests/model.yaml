@@ -1,0 +1,21 @@
+apiVersion: inference.llmkube.dev/v1alpha1
+kind: Model
+metadata:
+  name: gemma-e2b
+  namespace: default
+spec:
+  source: https://huggingface.co/ggml-org/gemma-4-E2B-it-GGUF/resolve/main/gemma-4-E2B-it-Q8_0.gguf
+  format: gguf
+  quantization: Q8_0
+
+  # Uncomment the following lines if you want to use GPU acceleration
+  # Requires GPU-enabled instances (e.g., g4dn.xlarge, p3.2xlarge)
+  #hardware:
+  #  accelerator: cuda
+  #  gpu:
+  #    enabled: true
+  #    count: 1
+
+  resources:
+    cpu: "2"
+    memory: "4Gi"

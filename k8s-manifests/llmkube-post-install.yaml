@@ -1,0 +1,60 @@
+# Post-install configuration for LLMKube
+# This sets the correct security context for volume permissions
+# Apply this immediately after installing LLMKube via Helm
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: llmkube-configure
+  namespace: llmkube-system
+spec:
+  template:
+    spec:
+      serviceAccountName: llmkube-configure
+      restartPolicy: OnFailure
+      containers:
+      - name: configure
+        image: bitnami/kubectl:latest
+        command:
+        - /bin/bash
+        - -c
+        - |
+          echo "Configuring LLMKube controller security context..."
+          kubectl patch deployment llmkube-controller-manager -n llmkube-system --type=json -p='[
+            {
+              "op": "add",
+              "path": "/spec/template/spec/securityContext",
+              "value": {"fsGroup": 100}
+            }
+          ]'
+          echo "✓ Configuration complete"
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: llmkube-configure
+  namespace: llmkube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: llmkube-configure
+  namespace: llmkube-system
+rules:
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["get", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: llmkube-configure
+  namespace: llmkube-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: llmkube-configure
+subjects:
+- kind: ServiceAccount
+  name: llmkube-configure
+  namespace: llmkube-system

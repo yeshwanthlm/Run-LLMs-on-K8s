@@ -1,0 +1,23 @@
+apiVersion: inference.llmkube.dev/v1alpha1
+kind: InferenceService
+metadata:
+  name: gemma-e2b-service
+  namespace: default
+  annotations:
+    # Make LoadBalancer internet-facing (default is internal)
+    service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
+    # Use IP mode to avoid security group conflicts
+    service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "ip"
+spec:
+  runtime: llamacpp
+  modelRef: gemma-e2b
+  replicas: 1
+  endpoint:
+    port: 8080
+    path: /v1/chat/completions
+    type: LoadBalancer
+  resources:
+    cpu: "1"
+    memory: "2Gi"
+  podSecurityContext:
+    fsGroup: 100
