@@ -156,7 +156,7 @@ resource "kubernetes_annotations" "default_storageclass" {
 }
 
 # Security group rule to allow LoadBalancer to access pods on port 8080
-# This allows traffic from the VPC CIDR to reach the inference service
+# Targets the cluster SG (covers cluster-level traffic from within the VPC)
 resource "aws_security_group_rule" "allow_lb_to_pods_8080" {
   type              = "ingress"
   from_port         = 8080
@@ -165,6 +165,21 @@ resource "aws_security_group_rule" "allow_lb_to_pods_8080" {
   security_group_id = module.eks.cluster_security_group_id
   description       = "Allow LoadBalancer to access LLM inference pods on port 8080"
   cidr_blocks       = [var.vpc_cidr]
+
+  depends_on = [module.eks]
+}
+
+# Security group rule on the NODE group SG for port 8080
+# Required because the NLB operates in IP target mode — it sends health checks
+# and traffic directly to the pod IP, which hits the node SG, not the cluster SG.
+resource "aws_security_group_rule" "allow_nlb_to_nodes_8080" {
+  type              = "ingress"
+  from_port         = 8080
+  to_port           = 8080
+  protocol          = "tcp"
+  security_group_id = module.eks.node_security_group_id
+  description       = "Allow NLB health checks and traffic to reach LLM pods on port 8080"
+  cidr_blocks       = ["0.0.0.0/0"]
 
   depends_on = [module.eks]
 }
